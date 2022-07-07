@@ -1,0 +1,259 @@
+/* eslint-disable no-unused-vars */
+const client = require("./client");
+const {
+  createUser,
+  createActivity,
+  createRoutine,
+  getRoutinesWithoutActivities,
+  getAllActivities,
+  addActivityToRoutine,
+} = require("./");
+
+async function dropTables() {
+  try {
+    console.log("Starting to drop tables...");
+    await client.query(`
+    DROP TABLE IF EXISTS mytablename;
+    DROP TABLE IF EXISTS routine_activities;
+    DROP TABLE IF EXISTS activities;
+    DROP TABLE IF EXISTS routines;
+    DROP TABLE IF EXISTS users;
+  `);
+
+    console.log("Finished dropping tables!");
+  } catch (error) {
+    console.error("Error dropping tables!");
+    throw error;
+  }
+}
+
+async function createTables() {
+  try {
+    console.log("Starting to build tables...");
+    await client.query(`
+    CREATE TABLE mytablename;
+      CREATE TABLE users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL
+      );
+      CREATE TABLE activities (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        description TEXT NOT NULL
+      );
+      CREATE TABLE routines (
+        id SERIAL PRIMARY KEY,
+        "creatorId" INTEGER REFERENCES users(id),
+        "isPublic" BOOLEAN	DEFAULT false,
+        name VARCHAR(255) UNIQUE NOT NULL,
+        goal TEXT NOT NULL
+      );
+      CREATE TABLE routine_activities	(
+        id SERIAL PRIMARY KEY,
+        "routineId" INTEGER REFERENCES routines(id),
+        "activityId" INTEGER REFERENCES activities(id),
+        duration INTEGER,
+        sets INTEGER,
+        reps INTEGER
+      );
+      `);
+
+    console.log("Finished building tables!");
+  } catch (error) {
+    console.error("Error building tables!");
+    throw error;
+  }
+}
+
+async function createInitialUsers() {
+  console.log("Starting to create users...");
+  try {
+    const usersToCreate = [
+      { username: "albert", password: "bertie99" },
+      { username: "sandra", password: "sandra123" },
+      { username: "glamgal", password: "glamgal123" },
+    ];
+    const users = await Promise.all(usersToCreate.map(createUser));
+
+    console.log("Finished creating users!");
+  } catch (error) {
+    console.error("Error creating users!");
+    throw error;
+  }
+}
+async function createInitialActivities() {
+  try {
+    console.log("Starting to create activities...");
+
+    const activitiesToCreate = [
+      {
+        name: "wide-grip standing barbell curl",
+        description: "Lift that barbell!",
+      },
+      {
+        name: "Incline Dumbbell Hammer Curl",
+        description:
+          "Lie down face up on an incline bench and lift thee barbells slowly upward toward chest",
+      },
+      {
+        name: "bench press",
+        description: "Lift a safe amount, but push yourself!",
+      },
+      { name: "Push Ups", description: "Pretty sure you know what to do!" },
+      { name: "squats", description: "Heavy lifting." },
+      { name: "treadmill", description: "running" },
+      { name: "stairs", description: "climb those stairs" },
+    ];
+    const activities = await Promise.all(
+      activitiesToCreate.map(createActivity)
+    );
+
+    console.log("Finished creating activities!");
+  } catch (error) {
+    console.error("Error creating activities!");
+    throw error;
+  }
+}
+
+async function createInitialRoutines() {
+  try {
+    console.log("starting to create routines...");
+
+    const routinesToCreate = [
+      {
+        creatorId: 2,
+        isPublic: true,
+        name: "Bicep Day",
+        goal: "Work the Back and Biceps.",
+      },
+      {
+        creatorId: 1,
+        isPublic: true,
+        name: "Chest Day",
+        goal: "To beef up the Chest and Triceps!",
+      },
+      {
+        creatorId: 1,
+        isPublic: true,
+        name: "Leg Day",
+        goal: "Running, stairs, squats",
+      },
+      {
+        creatorId: 2,
+        isPublic: true,
+        name: "Cardio Day",
+        goal: "Running, stairs. Stuff that gets your heart pumping!",
+      },
+    ];
+    const routines = await Promise.all(
+      routinesToCreate.map((routines) => createRoutine(routines))
+    );
+    console.log("Finished creating routines!");
+  } catch (error) {
+    console.error("Error creating routines!");
+    throw error;
+  }
+}
+
+async function createInitialRoutineActivities() {
+  try {
+    console.log("starting to create routine_activities...");
+    const [bicepRoutine, chestRoutine, legRoutine, cardioRoutine] =
+      await getRoutinesWithoutActivities();
+    const [bicep1, bicep2, chest1, chest2, leg1, leg2, leg3] =
+      await getAllActivities();
+
+    const routineActivitiesToCreate = [
+      {
+        routineId: bicepRoutine.id,
+        activityId: bicep1.id,
+        sets: 2,
+        reps: 5,
+        duration: 5,
+      },
+      {
+        routineId: bicepRoutine.id,
+        activityId: bicep2.id,
+        sets: 2,
+        reps: 5,
+        duration: 8,
+      },
+      {
+        routineId: chestRoutine.id,
+        activityId: chest1.id,
+        sets: 2,
+        reps: 5,
+        duration: 8,
+      },
+      {
+        routineId: chestRoutine.id,
+        activityId: chest2.id,
+        sets: 2,
+        reps: 5,
+        duration: 7,
+      },
+      {
+        routineId: legRoutine.id,
+        activityId: leg1.id,
+        sets: 2,
+        reps: 5,
+        duration: 9,
+      },
+      {
+        routineId: legRoutine.id,
+        activityId: leg2.id,
+        sets: 2,
+        reps: 5,
+        duration: 10,
+      },
+      {
+        routineId: legRoutine.id,
+        activityId: leg3.id,
+        sets: 2,
+        reps: 5,
+        duration: 7,
+      },
+      {
+        routineId: cardioRoutine.id,
+        activityId: leg2.id,
+        sets: 2,
+        reps: 5,
+        duration: 10,
+      },
+      {
+        routineId: cardioRoutine.id,
+        activityId: leg3.id,
+        sets: 2,
+        reps: 5,
+        duration: 15,
+      },
+    ];
+    const routineActivities = await Promise.all(
+      routineActivitiesToCreate.map(addActivityToRoutine)
+    );
+    console.log("Finished creating routine_activities!");
+  } catch (error) {
+    console.log("Error creating routine_activities!");
+    throw error;
+  }
+}
+
+async function rebuildDB() {
+  try {
+    client.connect();
+    await dropTables();
+    await createTables();
+    await createInitialUsers();
+    await createInitialActivities();
+    await createInitialRoutines();
+    await createInitialRoutineActivities();
+  } catch (error) {
+    console.log("Error during rebuildDB");
+    throw error;
+  }
+}
+
+module.exports = {
+  rebuildDB,
+};
